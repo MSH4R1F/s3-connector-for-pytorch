@@ -48,14 +48,14 @@ def init_distributed(rank=0, world_size=1):
 @hydra.main(version_base=None)
 def run_experiment(config: DictConfig) -> dict:
 
-    num_gpus = (
-        config.num_gpus if hasattr(config, "num_gpus") else torch.cuda.device_count()
-    )
+    num_gpus = config.num_gpus if hasattr(config, "num_gpus") else 1
     if not isinstance(num_gpus, int) or num_gpus <= 0:
         raise ValueError(
             "Invalid number of GPUs detected. Please specify a number of GPUs to use."
         )
-    elif num_gpus > torch.cuda.device_count():
+    # Only enforce the GPU-count ceiling for actual multi-GPU runs. num_gpus=1
+    # is single-process and runs on CPU-only hosts (device_count() == 0) too.
+    elif num_gpus > 1 and num_gpus > torch.cuda.device_count():
         raise ValueError(
             f"Number of GPUs specified ({num_gpus}) exceeds number of GPUs available ({torch.cuda.device_count()})"
         )
@@ -70,6 +70,9 @@ def run_experiment(config: DictConfig) -> dict:
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, range(num_gpus)))
         torch.cuda.empty_cache()
 
+    # Multi-GPU runs go through run_distributed_experiment, which spawns one
+    # process per GPU via mp.spawn and runs DDP. Single-GPU (or already inside a
+    # spawned process) runs the benchmark directly in this process.
     if num_gpus > 1 and not dist.is_initialized():
         return run_distributed_experiment(num_gpus, config)
     else:
@@ -384,7 +387,7 @@ def make_dataloader(
     dataset: Dataset, num_workers: int, batch_size: int, sampler=None, drop_last="auto"
 ):
     use_ddp = dist.is_initialized() and dist.get_world_size() > 1
-    if drop_last == "auto":
+    if str(drop_last).lower() == "auto":
         use_drop_last = use_ddp
     else:
         use_drop_last = str(drop_last).lower() == "true"
