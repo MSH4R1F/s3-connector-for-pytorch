@@ -168,9 +168,10 @@ def run_benchmark_experiment(config: DictConfig):
             model.model = torch.nn.parallel.DistributedDataParallel(
                 model.model, device_ids=[rank], output_device=rank
             )
-            # Recreate optimizer AFTER DDP wrapping
-            model._optimizer = None  # Clear cached optimizer
-            model.optimizer = torch.optim.Adam(model.model.parameters(), lr=0.001)
+            # Rebuild the optimizer over the DDP-wrapped params. lr and optimizer
+            # choice stay defined solely in Model.optimizer.
+            model.__dict__.pop("optimizer", None)
+            _ = model.optimizer
 
     result: ExperimentResult = model.train(dataloader, config.epochs)
 

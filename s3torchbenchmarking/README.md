@@ -202,8 +202,8 @@ pull data from S3 simultaneously.
 - A `capped_loader` ensures all ranks process the same number of batches to prevent DDP hangs:
   - Map-style datasets (S3MapDataset): uses `DistributedSampler` to shard indices across ranks; `capped_loader` caps iteration to `min(len)` across all ranks
   - Iterable datasets (S3IterableDataset): enables `enable_sharding` to split objects across ranks; `capped_loader` synchronizes per-batch and stops all ranks when any rank exhausts its data
-- `drop_last` is forced to `true` (DDP requires equal batch sizes across ranks)
-- Some samples may be skipped due to capping/dropping; check `volume` in metrics for actual count
+- `drop_last` defaults to `true` under multi-GPU so a short final batch doesn't skew per-rank step counts. Setting it to `false` is safe — `capped_loader` already keeps ranks in step, so it won't hang.
+- Some samples may be skipped due to capping/dropping; check `volume` in metrics for the actual count
 
 **Constraints:**
 

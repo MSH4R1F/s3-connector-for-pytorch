@@ -44,11 +44,7 @@ hydra:
       # Setting num_gpus > 1 enables DDP via mp.spawn. See README for details.
       # Note: model=entitlement always forces num_gpus=1 (I/O-only, no training).
       +num_gpus: 1
-      # Whether each rank drops its final batch when it has fewer than batch_size samples.
-      # "auto" (default): True when num_gpus > 1, False otherwise.
-      # This won't hang if set to false under multi-GPU: capped_loader already
-      # equalises the step count across ranks (map: min(len); iterable: stop when
-      # any rank exhausts), and that step-count sync is what prevents DDP hangs.
-      # drop_last defaults to true for multi-GPU only to keep per-rank step counts
-      # even so throughput/samples-per-epoch stay comparable across ranks.
+      # Whether each rank drops its final short batch (fewer than batch_size samples).
+      # "auto" (default): true under multi-GPU, false otherwise. See README for when
+      # to override and why false is still safe under multi-GPU.
       +drop_last: auto

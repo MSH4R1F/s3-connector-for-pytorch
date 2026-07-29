@@ -1,5 +1,6 @@
 #  Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #  // SPDX-License-Identifier: BSD
+import itertools
 import logging
 import os
 import random
@@ -20,7 +21,6 @@ from omegaconf import DictConfig
 from torch.nn import Module
 from torch.utils.data.dataloader import DataLoader
 from torchvision.transforms import v2  # type: ignore
-import itertools
 from transformers import (  # type: ignore
     ViTForImageClassification,
     ViTModel,
